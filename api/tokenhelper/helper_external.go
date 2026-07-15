@@ -111,11 +111,16 @@ func (h *ExternalTokenHelper) Path() string {
 func (h *ExternalTokenHelper) cmd(op string) (*exec.Cmd, error) {
 	binPath := strings.ReplaceAll(h.BinaryPath, "\\", "\\\\")
 
+	validatedPath, err := ExternalTokenHelperPath(binPath)
+	if err != nil {
+		return nil, fmt.Errorf("invalid token helper binary path %q: %w", binPath, err)
+	}
+
 	args := make([]string, len(h.Args))
 	copy(args, h.Args)
 	args = append(args, op)
 
-	cmd := exec.Command(binPath, args...)
+	cmd := exec.Command(validatedPath, args...)
 	cmd.Env = h.Env
 	return cmd, nil
 }

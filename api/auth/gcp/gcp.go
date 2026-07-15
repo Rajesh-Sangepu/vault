@@ -34,7 +34,7 @@ const (
 	gceType             = "gce"
 	defaultMountPath    = "gcp"
 	defaultAuthType     = gceType
-	identityMetadataURL = "http://metadata/computeMetadata/v1/instance/service-accounts/default/identity"
+	identityMetadataURL = "https://metadata/computeMetadata/v1/instance/service-accounts/default/identity"
 )
 
 // NewGCPAuth initializes a new GCP auth method interface to be

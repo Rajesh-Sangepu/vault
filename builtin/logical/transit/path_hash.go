@@ -38,11 +38,9 @@ func (b *backend) pathHash() *framework.Path {
 				Default: "sha2-256",
 				Description: `Algorithm to use (POST body parameter). Valid values are:
 
-* sha2-224
 * sha2-256
 * sha2-384
 * sha2-512
-* sha3-224
 * sha3-256
 * sha3-384
 * sha3-512
@@ -102,7 +100,7 @@ func (b *backend) pathHashWrite(ctx context.Context, req *logical.Request, d *fr
 	var hf hash.Hash
 	switch algorithm {
 	case "sha2-224":
-		hf = sha256.New224()
+		return logical.ErrorResponse("sha2-224 is a 224-bit hash function and is deprecated or disallowed by security policy; use sha2-384 or higher"), logical.ErrInvalidRequest
 	case "sha2-256":
 		hf = sha256.New()
 	case "sha2-384":
@@ -110,7 +108,7 @@ func (b *backend) pathHashWrite(ctx context.Context, req *logical.Request, d *fr
 	case "sha2-512":
 		hf = sha512.New()
 	case "sha3-224":
-		hf = sha3.New224()
+		return logical.ErrorResponse("sha3-224 is a 224-bit hash function and is deprecated or disallowed by security policy; use sha3-384 or higher"), logical.ErrInvalidRequest
 	case "sha3-256":
 		hf = sha3.New256()
 	case "sha3-384":

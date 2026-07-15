@@ -36,5 +36,12 @@ ENV PATH $GOROOT/bin:$GOPATH/bin:$PATH
 RUN go get golang.org/x/tools/cmd/goimports
 
 RUN mkdir -p /gopath/src/github.com/hashicorp/vault
+
+RUN groupadd --gid 1001 appuser && \
+    useradd --uid 1001 --gid appuser --shell /bin/bash --create-home appuser && \
+    chown -R appuser:appuser /gopath
+
+USER appuser
+
 WORKDIR /gopath/src/github.com/hashicorp/vault
 CMD make static-dist bin

@@ -140,6 +140,7 @@ func (l *InmemLayer) Dial(addr string, timeout time.Duration, tlsConfig *tls.Con
 	connectionCh := l.connectionCh
 
 	if addr == l.addr {
+		l.l.Unlock()
 		panic(fmt.Sprintf("%q attempted to dial itself", l.addr))
 	}
 

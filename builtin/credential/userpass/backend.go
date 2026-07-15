@@ -5,9 +5,11 @@ package userpass
 
 import (
 	"context"
+	"crypto/rand"
 
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const operationPrefixUserpass = "userpass"
@@ -22,6 +24,20 @@ func Factory(ctx context.Context, conf *logical.BackendConfig) (logical.Backend,
 
 func Backend() *backend {
 	var b backend
+
+	// Generate a random fake password hash at startup so no hardcoded hash
+	// exists in the source. This hash is used as a timing decoy when a
+	// login is attempted for a non-existent user.
+	randomBytes := make([]byte, 32)
+	if _, err := rand.Read(randomBytes); err != nil {
+		panic("userpass: failed to generate random bytes for fake password hash: " + err.Error())
+	}
+	fakeHash, err := bcrypt.GenerateFromPassword(randomBytes, bcrypt.DefaultCost)
+	if err != nil {
+		panic("userpass: failed to generate fake password hash: " + err.Error())
+	}
+	b.fakePasswordHash = fakeHash
+
 	b.Backend = &framework.Backend{
 		Help: backendHelp,
 
@@ -48,6 +64,11 @@ func Backend() *backend {
 
 type backend struct {
 	*framework.Backend
+
+	// fakePasswordHash is a bcrypt hash generated from a random secret at
+	// startup. It is used as a timing decoy during login when the requested
+	// user does not exist, preventing user-enumeration via response time.
+	fakePasswordHash []byte
 }
 
 const backendHelp = `

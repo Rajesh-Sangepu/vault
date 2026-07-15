@@ -99,19 +99,28 @@ func NewCockroachDBBackend(conf map[string]string, logger log.Logger) (physical.
 	}
 
 	// Create the required tables if they don't exist.
-	createQuery := "CREATE TABLE IF NOT EXISTS " + dbTable +
-		" (path STRING, value BYTES, PRIMARY KEY (path))"
+	// Note: DDL table identifiers cannot be parameterized in SQL. Both dbTable and
+	// dbHATable have been validated by validateDBTable() above, which enforces strict
+	// identifier rules (letters, underscores, digits, and '$' only; no SQL keywords;
+	// no quotes). fmt.Sprintf is used here solely to make this intent explicit.
+	createQuery := fmt.Sprintf(
+		"CREATE TABLE IF NOT EXISTS %s (path STRING, value BYTES, PRIMARY KEY (path))",
+		dbTable,
+	)
 	if _, err := db.Exec(createQuery); err != nil {
 		return nil, fmt.Errorf("failed to create CockroachDB table: %w", err)
 	}
 	if haEnabled {
-		createHATableQuery := "CREATE TABLE IF NOT EXISTS " + dbHATable +
-			"(ha_key                                      TEXT NOT NULL, " +
-			" ha_identity                                 TEXT NOT NULL, " +
-			" ha_value                                    TEXT, " +
-			" valid_until                                 TIMESTAMP WITH TIME ZONE NOT NULL, " +
-			" CONSTRAINT ha_key PRIMARY KEY (ha_key) " +
-			");"
+		createHATableQuery := fmt.Sprintf(
+			"CREATE TABLE IF NOT EXISTS %s "+
+				"(ha_key                                      TEXT NOT NULL, "+
+				" ha_identity                                 TEXT NOT NULL, "+
+				" ha_value                                    TEXT, "+
+				" valid_until                                 TIMESTAMP WITH TIME ZONE NOT NULL, "+
+				" CONSTRAINT ha_key PRIMARY KEY (ha_key) "+
+				");",
+			dbHATable,
+		)
 		if _, err := db.Exec(createHATableQuery); err != nil {
 			return nil, fmt.Errorf("failed to create CockroachDB HA table: %w", err)
 		}

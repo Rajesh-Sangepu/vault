@@ -49,6 +49,11 @@ RUN chmod +x tools.sh
 COPY .build/entrypoint.sh .
 RUN chmod +x entrypoint.sh
 
+# Create a non-root user and switch to it before the entrypoint to avoid
+# running container processes as root (CWE-250 / missing-user-entrypoint).
+RUN useradd --create-home --shell /bin/bash builder
+USER builder
+
 ENTRYPOINT ["/entrypoint.sh"]
 
 #  Default

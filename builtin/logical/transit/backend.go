@@ -225,31 +225,37 @@ func (b *backend) incrementBillingCounts(ctx context.Context, count uint64) erro
 
 // Update cache size and get policy
 func (b *backend) GetPolicy(ctx context.Context, polReq keysutil.PolicyRequest, rand io.Reader) (retP *keysutil.Policy, retUpserted bool, retErr error) {
-	// Acquire read lock to read cacheSizeChanged
-	b.configMutex.RLock()
-	if b.lm.GetUseCache() && b.cacheSizeChanged {
-		var err error
-		currentCacheSize := b.lm.GetCacheSize()
-		storedCacheSize, err := GetCacheSizeFromStorage(ctx, polReq.Storage)
-		if err != nil {
-			b.configMutex.RUnlock()
-			return nil, false, err
-		}
-		if currentCacheSize != storedCacheSize {
-			err = b.lm.InitCache(storedCacheSize)
+	// Use a closure to scope the read lock, so RUnlock is always called via
+	// defer before we potentially upgrade to a write lock or proceed further.
+	needsWriteLock, err := func() (bool, error) {
+		b.configMutex.RLock()
+		defer b.configMutex.RUnlock()
+		if b.lm.GetUseCache() && b.cacheSizeChanged {
+			currentCacheSize := b.lm.GetCacheSize()
+			storedCacheSize, err := GetCacheSizeFromStorage(ctx, polReq.Storage)
 			if err != nil {
-				b.configMutex.RUnlock()
-				return nil, false, err
+				return false, err
 			}
+			if currentCacheSize != storedCacheSize {
+				if err = b.lm.InitCache(storedCacheSize); err != nil {
+					return false, err
+				}
+			}
+			return true, nil
 		}
-		// Release the read lock and acquire the write lock
-		b.configMutex.RUnlock()
+		return false, nil
+	}()
+	if err != nil {
+		return nil, false, err
+	}
+
+	if needsWriteLock {
+		// Upgrade to write lock to update cacheSizeChanged flag
 		b.configMutex.Lock()
 		defer b.configMutex.Unlock()
 		b.cacheSizeChanged = false
-	} else {
-		b.configMutex.RUnlock()
 	}
+
 	p, _, err := b.lm.GetPolicy(ctx, polReq, rand)
 	if err != nil {
 		return p, false, err

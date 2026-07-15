@@ -6,7 +6,6 @@ package transit
 import (
 	"context"
 	"crypto/rsa"
-	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/base64"
@@ -53,7 +52,7 @@ func (b *backend) pathImport() *framework.Path {
 				Type:    framework.TypeString,
 				Default: "SHA256",
 				Description: `The hash function used as a random oracle in the OAEP wrapping of the user-generated,
-ephemeral AES key. Can be one of "SHA1", "SHA224", "SHA256" (default), "SHA384", or "SHA512"`,
+ephemeral AES key. Can be one of "SHA224", "SHA256" (default), "SHA384", or "SHA512"`,
 			},
 			"ciphertext": {
 				Type: framework.TypeString,
@@ -141,7 +140,7 @@ with the wrapping key and then concatenated with the import key, wrapped by the 
 				Type:    framework.TypeString,
 				Default: "SHA256",
 				Description: `The hash function used as a random oracle in the OAEP wrapping of the user-generated,
-ephemeral AES key. Can be one of "SHA1", "SHA224", "SHA256" (default), "SHA384", or "SHA512"`,
+ephemeral AES key. Can be one of "SHA224", "SHA256" (default), "SHA384", or "SHA512"`,
 			},
 			"version": {
 				Type: framework.TypeInt,
@@ -409,8 +408,6 @@ func (b *backend) extractKeyFromFields(ctx context.Context, req *logical.Request
 
 func parseHashFn(hashFn string) (hash.Hash, error) {
 	switch strings.ToUpper(hashFn) {
-	case "SHA1":
-		return sha1.New(), nil
 	case "SHA224":
 		return sha256.New224(), nil
 	case "SHA256":

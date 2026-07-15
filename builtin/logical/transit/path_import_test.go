@@ -41,7 +41,6 @@ var keyTypes = []string{
 
 var hashFns = []string{
 	"SHA256",
-	"SHA1",
 	"SHA224",
 	"SHA384",
 	"SHA512",

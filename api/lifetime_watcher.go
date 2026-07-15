@@ -4,8 +4,9 @@
 package api
 
 import (
+	"crypto/rand"
 	"errors"
-	"math/rand"
+	"math/big"
 	"strings"
 	"sync"
 	"time"
@@ -85,7 +86,6 @@ type LifetimeWatcher struct {
 	client        *Client
 	secret        *Secret
 	grace         time.Duration
-	random        *rand.Rand
 	increment     int
 	doneCh        chan error
 	renewCh       chan *RenewOutput
@@ -105,11 +105,6 @@ type LifetimeWatcherInput struct {
 
 	// DEPRECATED: this does not do anything.
 	Grace time.Duration
-
-	// Rand is the randomizer to use for underlying randomization. If not
-	// provided, one will be generated and seeded automatically. If provided, it
-	// is assumed to have already been seeded.
-	Rand *rand.Rand
 
 	// RenewBuffer is the size of the buffered channel where renew messages are
 	// dispatched.
@@ -150,18 +145,6 @@ func (c *Client) NewLifetimeWatcher(i *LifetimeWatcherInput) (*LifetimeWatcher, 
 		return nil, ErrLifetimeWatcherMissingSecret
 	}
 
-	random := i.Rand
-	if random == nil {
-		// NOTE:
-		// Rather than a cryptographically secure random number generator (RNG),
-		// the default behavior uses the math/rand package. The random number is
-		// used to introduce a slight jitter when calculating the grace period
-		// for a monitored secret monitoring. This is intended to stagger renewal
-		// requests to the Vault server, but in a semi-predictable way, so there
-		// is no need to use a cryptographically secure RNG.
-		random = rand.New(rand.NewSource(int64(time.Now().Nanosecond())))
-	}
-
 	renewBuffer := i.RenewBuffer
 	if renewBuffer == 0 {
 		renewBuffer = DefaultLifetimeWatcherRenewBuffer
@@ -171,7 +154,6 @@ func (c *Client) NewLifetimeWatcher(i *LifetimeWatcherInput) (*LifetimeWatcher, 
 		client:        c,
 		secret:        secret,
 		increment:     i.Increment,
-		random:        random,
 		doneCh:        make(chan error, 1),
 		renewCh:       make(chan *RenewOutput, renewBuffer),
 		renewBehavior: i.RenewBehavior,
@@ -422,7 +404,14 @@ func (r *LifetimeWatcher) calculateGrace(leaseDuration, increment time.Duration)
 
 	// For a given lease duration, we want to allow 80-90% of that to elapse,
 	// so the remaining amount is the grace period
-	r.grace = time.Duration(jitterMax) + time.Duration(uint64(r.random.Int63())%uint64(jitterMax))
+	jitterMaxInt := big.NewInt(int64(jitterMax))
+	jitterVal, err := rand.Int(rand.Reader, jitterMaxInt)
+	if err != nil {
+		// On crypto/rand failure, fall back to zero jitter
+		r.grace = time.Duration(jitterMax)
+		return
+	}
+	r.grace = time.Duration(jitterMax) + time.Duration(jitterVal.Int64())
 }
 
 type (

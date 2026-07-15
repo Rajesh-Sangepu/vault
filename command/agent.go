@@ -9,6 +9,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"html/template"
 	"io"
 	"net"
 	"net/http"
@@ -1194,10 +1195,26 @@ func (c *AgentCommand) handleMetrics() http.Handler {
 		switch v := resp.Data[logical.HTTPRawBody].(type) {
 		case string:
 			w.WriteHeader(status)
-			w.Write([]byte(v))
+			tmpl, err := template.New("").Parse("{{.}}")
+			if err != nil {
+				logical.RespondError(w, http.StatusInternalServerError, fmt.Errorf("failed to parse response template: %w", err))
+				return
+			}
+			if err := tmpl.Execute(w, v); err != nil {
+				logical.RespondError(w, http.StatusInternalServerError, fmt.Errorf("failed to render response: %w", err))
+				return
+			}
 		case []byte:
 			w.WriteHeader(status)
-			w.Write(v)
+			tmpl, err := template.New("").Parse("{{.}}")
+			if err != nil {
+				logical.RespondError(w, http.StatusInternalServerError, fmt.Errorf("failed to parse response template: %w", err))
+				return
+			}
+			if err := tmpl.Execute(w, string(v)); err != nil {
+				logical.RespondError(w, http.StatusInternalServerError, fmt.Errorf("failed to render response: %w", err))
+				return
+			}
 		default:
 			logical.RespondError(w, http.StatusInternalServerError, fmt.Errorf("wrong response returned"))
 		}

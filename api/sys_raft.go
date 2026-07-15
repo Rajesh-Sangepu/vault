@@ -65,25 +65,38 @@ func (ac *AutopilotConfig) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// autopilotConfigJSON is a concrete struct used for safe JSON deserialization
+// of AutopilotConfig, avoiding the use of interface{} (CWE-502).
+type autopilotConfigJSON struct {
+	CleanupDeadServers             bool   `json:"cleanup_dead_servers"`
+	LastContactThreshold           string `json:"last_contact_threshold"`
+	DeadServerLastContactThreshold string `json:"dead_server_last_contact_threshold"`
+	MaxTrailingLogs                uint64 `json:"max_trailing_logs"`
+	MinQuorum                      uint   `json:"min_quorum"`
+	ServerStabilizationTime        string `json:"server_stabilization_time"`
+	DisableUpgradeMigration        bool   `json:"disable_upgrade_migration"`
+}
+
 // UnmarshalJSON parses the autopilot config JSON blob
 func (ac *AutopilotConfig) UnmarshalJSON(b []byte) error {
-	var data interface{}
-	err := json.Unmarshal(b, &data)
-	if err != nil {
+	var data autopilotConfigJSON
+	if err := json.Unmarshal(b, &data); err != nil {
 		return err
 	}
 
-	conf := data.(map[string]interface{})
-	if err = mapstructure.WeakDecode(conf, ac); err != nil {
+	ac.CleanupDeadServers = data.CleanupDeadServers
+	ac.MaxTrailingLogs = data.MaxTrailingLogs
+	ac.MinQuorum = data.MinQuorum
+	ac.DisableUpgradeMigration = data.DisableUpgradeMigration
+
+	var err error
+	if ac.LastContactThreshold, err = parseutil.ParseDurationSecond(data.LastContactThreshold); err != nil {
 		return err
 	}
-	if ac.LastContactThreshold, err = parseutil.ParseDurationSecond(conf["last_contact_threshold"]); err != nil {
+	if ac.DeadServerLastContactThreshold, err = parseutil.ParseDurationSecond(data.DeadServerLastContactThreshold); err != nil {
 		return err
 	}
-	if ac.DeadServerLastContactThreshold, err = parseutil.ParseDurationSecond(conf["dead_server_last_contact_threshold"]); err != nil {
-		return err
-	}
-	if ac.ServerStabilizationTime, err = parseutil.ParseDurationSecond(conf["server_stabilization_time"]); err != nil {
+	if ac.ServerStabilizationTime, err = parseutil.ParseDurationSecond(data.ServerStabilizationTime); err != nil {
 		return err
 	}
 	return nil

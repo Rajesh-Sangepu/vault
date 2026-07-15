@@ -284,28 +284,27 @@ func (b *Broker) LogRequest(ctx context.Context, in *logical.LogInput) (retErr e
 	}
 	defer auditCancel()
 
-	var status eventlogger.Status
 	if hasAuditPipelines(b.broker) {
-		status, err = b.broker.Send(auditContext, event.AuditType.AsEventType(), e)
+		status, err := b.broker.Send(auditContext, event.AuditType.AsEventType(), e)
 		if err != nil {
 			return errors.Join(append([]error{err}, status.Warnings...)...)
 		}
-	}
 
-	// Audit event ended up in at least 1 sink.
-	if len(status.CompleteSinks()) > 0 {
-		// We should log warnings to the operational logs regardless of whether
-		// we consider the overall auditing attempt to be successful.
-		if len(status.Warnings) > 0 {
-			b.logger.Error("log request underlying pipeline error(s)", "error", errors.Join(status.Warnings...))
+		// Audit event ended up in at least 1 sink.
+		if len(status.CompleteSinks()) > 0 {
+			// We should log warnings to the operational logs regardless of whether
+			// we consider the overall auditing attempt to be successful.
+			if len(status.Warnings) > 0 {
+				b.logger.Error("log request underlying pipeline error(s)", "error", errors.Join(status.Warnings...))
+			}
+
+			return nil
 		}
 
-		return nil
-	}
-
-	// There were errors from inside the pipeline and we didn't write to a sink.
-	if len(status.Warnings) > 0 {
-		return fmt.Errorf("error during audit pipeline processing: %w", errors.Join(status.Warnings...))
+		// There were errors from inside the pipeline and we didn't write to a sink.
+		if len(status.Warnings) > 0 {
+			return fmt.Errorf("error during audit pipeline processing: %w", errors.Join(status.Warnings...))
+		}
 	}
 
 	// Handle any additional audit that is required (Enterprise/CE dependant).

@@ -137,12 +137,12 @@ func parseRaftBackendConfig(conf map[string]string, logger log.Logger) (*RaftBac
 
 	c.MaxEntrySize = defaultMaxEntrySize
 	if maxEntrySizeCfg := conf["max_entry_size"]; len(maxEntrySizeCfg) != 0 {
-		i, err := strconv.Atoi(maxEntrySizeCfg)
+		i, err := strconv.ParseUint(maxEntrySizeCfg, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse 'max_entry_size': %w", err)
 		}
 
-		c.MaxEntrySize = uint64(i)
+		c.MaxEntrySize = i
 	}
 
 	c.MaxMountAndNamespaceTableEntrySize = c.MaxEntrySize

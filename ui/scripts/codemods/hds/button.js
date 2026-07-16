@@ -290,7 +290,7 @@ module.exports = (env) => {
             return transforms.buildElement();
           }
         } catch (error) {
-          console.log(`\nError caught transforming button in ${env.filePath}\n`, error); // eslint-disable-line
+          console.log('\nError caught transforming button in %s\n', env.filePath, error); // eslint-disable-line
         }
       }
     },

@@ -12,6 +12,14 @@ import type { UserSetupOptions } from './e2e/init.setup';
 
 const userTypes = Object.keys(USER_POLICY_MAP);
 
+// Sanitize user type to prevent path traversal: only allow alphanumeric characters, hyphens, and underscores
+const sanitizeUserType = (userType: string): string => {
+  if (!/^[a-zA-Z0-9_-]+$/.test(userType)) {
+    throw new Error(`Invalid userType identifier detected: "${userType}". Only alphanumeric characters, hyphens, and underscores are allowed.`);
+  }
+  return userType;
+};
+
 // start at port 8204 and increment for each project to allow them to run concurrently
 const getURL = (increment: number, server = false) => {
   const port = `820${4 + increment}`;
@@ -54,7 +62,7 @@ export default defineConfig<UserSetupOptions>({
     })),
     // create browser projects for each user type
     ...userTypes.map((userType, index) => {
-      const sessionFile = path.join(tmpDir, `${userType}-session.json`);
+      const sessionFile = path.join(tmpDir, `${sanitizeUserType(userType)}-session.json`);
       return {
         name: `chrome:${userType}`,
         dependencies: [`setup:${userType}`],
@@ -80,7 +88,7 @@ export default defineConfig<UserSetupOptions>({
       // set the listener address with correct port for this project
       config.listener.tcp.address = getURL(index, true);
       // write the config to a new file for this project
-      const configPath = path.join(tmpDir, `${userType}-vault-config.json`);
+      const configPath = path.join(tmpDir, `${sanitizeUserType(userType)}-vault-config.json`);
       fs.writeFileSync(configPath, JSON.stringify(config));
 
       return {

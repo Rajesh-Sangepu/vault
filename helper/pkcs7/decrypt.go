@@ -194,7 +194,7 @@ func (eci encryptedContentInfo) decrypt(key []byte) ([]byte, error) {
 
 	switch {
 	case alg.Equal(OIDEncryptionAlgorithmDESCBC):
-		block, err = des.NewCipher(key)
+		block, err = aes.NewCipher(key)
 	case alg.Equal(OIDEncryptionAlgorithmDESEDE3CBC):
 		block, err = des.NewTripleDESCipher(key)
 	case alg.Equal(OIDEncryptionAlgorithmAES256CBC), alg.Equal(OIDEncryptionAlgorithmAES256GCM):

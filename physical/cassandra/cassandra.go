@@ -192,7 +192,9 @@ func setupCassandraTLS(conf map[string]string, cluster *gocql.ClusterConfig) err
 		return nil
 	}
 
-	tlsConfig := &tls.Config{}
+	tlsConfig := &tls.Config{
+		MinVersion: tls.VersionTLS12,
+	}
 	if pemBundlePath, ok := conf["pem_bundle_file"]; ok {
 		pemBundleData, err := ioutil.ReadFile(pemBundlePath)
 		if err != nil {
@@ -235,16 +237,12 @@ func setupCassandraTLS(conf map[string]string, cluster *gocql.ClusterConfig) err
 
 	if tlsMinVersion, ok := conf["tls_min_version"]; ok {
 		switch tlsMinVersion {
-		case "tls10":
-			tlsConfig.MinVersion = tls.VersionTLS10
-		case "tls11":
-			tlsConfig.MinVersion = tls.VersionTLS11
 		case "tls12":
 			tlsConfig.MinVersion = tls.VersionTLS12
 		case "tls13":
 			tlsConfig.MinVersion = tls.VersionTLS13
 		default:
-			return fmt.Errorf("'tls_min_version' must be one of `tls10`, `tls11`, `tls12` or `tls13`")
+			return fmt.Errorf("'tls_min_version' must be one of `tls12` or `tls13`")
 		}
 	}
 

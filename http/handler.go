@@ -605,7 +605,7 @@ func wrapGenericHandler(core *vault.Core, h http.Handler, props *vault.HandlerPr
 		cleanedPath := cleanPath(originalPath)
 		switch {
 		case originalPath != cleanedPath:
-			http.Redirect(w, r, r.URL.Path, http.StatusTemporaryRedirect)
+			http.Redirect(w, r, cleanedPath, http.StatusTemporaryRedirect)
 			cancelFunc()
 			return
 		case strings.HasPrefix(r.URL.Path, "/v1/"):

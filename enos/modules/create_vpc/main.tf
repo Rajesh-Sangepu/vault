@@ -40,7 +40,7 @@ resource "aws_subnet" "subnet" {
 
   // IPV4, but since we need to support ipv4 connections from the machine running enos, we're
   // always going to need ipv4 available.
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = false
   cidr_block              = cidrsubnet(var.ipv4_cidr, 8, count.index)
 
   // IPV6, only set these when we want to run in ipv6 mode.

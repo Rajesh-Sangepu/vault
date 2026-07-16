@@ -259,6 +259,11 @@ resource "aws_launch_template" "target" {
     security_groups             = [aws_security_group.target.id]
   }
 
+  metadata_options {
+    http_endpoint = "enabled"
+    http_tokens   = "required"
+  }
+
   tag_specifications {
     resource_type = "instance"
 

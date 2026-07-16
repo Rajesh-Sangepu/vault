@@ -5,7 +5,7 @@ package storagepacker
 
 import (
 	"context"
-	"crypto/md5"
+	"crypto/sha256"
 	"fmt"
 	"strconv"
 	"strings"
@@ -116,7 +116,7 @@ func (s *Bucket) upsert(item *Item) error {
 // BucketKey returns the storage key of the bucket where the given item will be
 // stored.
 func (s *StoragePacker) BucketKey(itemID string) string {
-	hf := md5.New()
+	hf := sha256.New()
 	input := []byte(itemID)
 	n, err := hf.Write(input)
 	// Make linter happy

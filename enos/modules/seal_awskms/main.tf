@@ -40,6 +40,7 @@ locals {
 resource "aws_kms_key" "key" {
   description             = "auto-unseal-key-${local.cluster_name}"
   deletion_window_in_days = 7 // 7 is the shortest allowed window
+  enable_key_rotation     = true
   tags                    = var.common_tags
 }
 

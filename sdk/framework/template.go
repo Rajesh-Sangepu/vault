@@ -7,7 +7,7 @@ import (
 	"bufio"
 	"bytes"
 	"strings"
-	"text/template"
+	"html/template"
 
 	"github.com/hashicorp/errwrap"
 )
